@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// All monetary and resource quantities are BigInt minor units (cents / pieces).
+// Never use floating point for balances.
+
+model Player {
+  id          String    @id @default(cuid())
+  telegramId  BigInt    @unique
+  username    String?
+  firstName   String?
+  money       BigInt    @default(500000) // cents; starting capital $5,000.00
+  workers     Int       @default(4)
+  trucks      Int       @default(1)
+  streak      Int       @default(0)
+  lastDailyAt DateTime?
+  referredBy  String?
+  suspicion   Int       @default(0)
+  guildId     String?
+  guild       Guild?   @relation("GuildMembers", fields: [guildId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  resources   Resource[]
+  buildings   Building[]
+  techs       PlayerTech[]
+  boosters    PlayerBooster[]
+  contracts   Contract[]
+  events      GameEvent[]
+  sessions    Session[]
+
+  @@index([guildId])
+}
+
+model Resource {
+  id       String @id @default(cuid())
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  kind     String
+  qty      BigInt @default(0)
+
+  @@unique([playerId, kind])
+}
+
+model Building {
+  id              String   @id @default(cuid())
+  playerId         String
+  player           Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  kind             String
+  level            Int      @default(1)
+  assignedWorkers  Int      @default(0)
+  lastCollectedAt  DateTime @default(now())
+
+  @@index([playerId])
+}
+
+model PlayerTech {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  techId     String
+  unlockedAt DateTime @default(now())
+
+  @@unique([playerId, techId])
+}
+
+model PlayerBooster {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  boosterId String
+  expiresAt DateTime
+
+  @@index([playerId])
+}
+
+model MarketPrice {
+  id        String   @id @default(cuid())
+  kind      String   @unique
+  price     BigInt   // cents per unit
+  updatedAt DateTime @updatedAt
+}
+
+model PricePoint {
+  id        String   @id @default(cuid())
+  kind      String
+  price     BigInt
+  recordedAt DateTime @default(now())
+
+  @@index([kind, recordedAt])
+}
+
+model GameEvent {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  kind       String // DROUGHT | STRIKE | PRICE_SPIKE | TAX_RAID
+  payload    Json
+  resolved   Boolean  @default(false)
+  response   String? // action chosen by the player, if any
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([playerId, resolved])
+}
+
+model Contract {
+  id          String    @id @default(cuid())
+  playerId    String
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  resource    String
+  qty         BigInt
+  reward      BigInt    // cents paid on delivery
+  penalty     BigInt    // cents charged on failure
+  status      String    @default("OFFERED") // OFFERED | ACTIVE | DELIVERED | FAILED | EXPIRED
+  deadline    DateTime
+  truckLocked Boolean   @default(false)
+  deliveredQty BigInt   @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([playerId, status])
+}
+
+model Guild {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  ownerId   String
+  createdAt DateTime @default(now())
+  members   Player[] @relation("GuildMembers")
+}
+
+model GuildContract {
+  id            String   @id @default(cuid())
+  guildId       String
+  guild         Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  resource      String
+  qty           BigInt
+  deliveredQty  BigInt   @default(0)
+  reward        BigInt
+  contributions Json     @default("{}") // { playerId: qty }
+  status        String   @default("OPEN") // OPEN | COMPLETED | EXPIRED
+  deadline      DateTime
+
+  @@index([guildId, status])
+}
+
+model AuctionLot {
+  id        String   @id @default(cuid())
+  boosterId String
+  kind      String   @unique // one lot per booster type per day
+  startAt   DateTime
+  closeAt   DateTime
+  status    String   @default("OPEN") // OPEN | CLOSED
+  winnerId  String?
+  winnerBid BigInt?
+
+  bids      AuctionBid[]
+}
+
+model AuctionBid {
+  id        String     @id @default(cuid())
+  lotId     String
+  lot       AuctionLot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  playerId  String
+  amount    BigInt
+  escrowed  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  @@index([lotId, amount(sort: Desc)])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model IdempotencyRecord {
+  key          String   @id
+  responseBody String
+  statusCode   Int      @default(200)
+  createdAt    DateTime @default(now())
+}
+
+model JobLock {
+  id        String   @id
+  ownerId   String
+  expiresAt DateTime
+}

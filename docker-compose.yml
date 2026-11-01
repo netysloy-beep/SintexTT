@@ -1,0 +1,123 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: econ
+      POSTGRES_PASSWORD: econ
+      POSTGRES_DB: econ
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U econ -d econ"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "6379:6379"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    command: ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed"]
+    working_dir: /app/packages/backend
+    environment:
+      DATABASE_URL: postgresql://econ:econ@postgres:5432/econ?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./packages/backend/prisma:/app/packages/backend/prisma
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    command: ["node", "dist/server.js"]
+    working_dir: /app/packages/backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://econ:econ@postgres:5432/econ?schema=public
+      REDIS_URL: redis://redis:6379
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_WEBAPP_URL: ${BOT_WEBAPP_URL:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      SESSION_TTL_HOURS: 168
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    command: ["node", "dist/workers/index.js"]
+    working_dir: /app/packages/backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://econ:econ@postgres:5432/econ?schema=public
+      REDIS_URL: redis://redis:6379
+      AUCTION_OPEN_CRON: ${AUCTION_OPEN_CRON:-0 18 * * *}
+      AUCTION_CLOSE_CRON: ${AUCTION_CLOSE_CRON:-10 18 * * *}
+      MARKET_TICK_CRON: "* * * * *"
+      EVENTS_CRON: "0 */3 * * *"
+      CONTRACTS_CRON: "0 */2 * * *"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  bot:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    command: ["node", "dist/bot/index.js"]
+    working_dir: /app/packages/backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresgresql://econ:econ@postgres:5432/econ?schema=public
+      REDIS_URL: redis://redis:6379
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_WEBAPP_URL: ${BOT_WEBAPP_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
