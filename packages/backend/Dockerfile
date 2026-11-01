@@ -14,8 +14,8 @@ RUN cd packages/backend && pnpm prisma generate && pnpm build
 
 FROM base AS runner
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/backend/node_modules ./packages/backend/node_modules
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/backend/node_modules ./packages/backend/node_modules
 COPY --from=build /app/packages/backend/dist ./packages/backend/dist
 COPY --from=build /app/packages/backend/prisma ./packages/backend/prisma
 WORKDIR /app/packages/backend
