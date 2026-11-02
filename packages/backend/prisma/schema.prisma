@@ -133,6 +133,7 @@ model Guild {
   ownerId   String
   createdAt DateTime @default(now())
   members   Player[] @relation("GuildMembers")
+  contracts GuildContract[]
 }
 
 model GuildContract {
