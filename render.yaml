@@ -4,7 +4,7 @@
 # Backend runs API + workers + bot in one process (dist/all.js).
 services:
   - type: web
-    name: sintex-backend
+    name: sintex-backend-rl3r
     runtime: docker
     dockerfilePath: packages/backend/Dockerfile
     plan: free
@@ -32,5 +32,13 @@ services:
     dockerfilePath: packages/frontend/Dockerfile
     plan: free
     envVars:
-      - key: BACKEND_ORIGIN
-        value: https://sintex-backend-rl3r.onrender.com
+      - key: BACKEND_HOST
+        fromService:
+          name: sintex-backend
+          type: web
+          property: host
+      - key: BACKEND_PORT
+        fromService:
+          name: sintex-backend
+          type: web
+          property: port
