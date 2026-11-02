@@ -1,7 +1,19 @@
 # Render Blueprint — fully free-tier setup (no payment info required).
-# Postgres -> Neon (neon.tech), Redis -> Upstash (upstash.com): paste connection strings.
-# Backend runs API + workers + bot in one process (dist/all.js) on the free plan.
+# Redis runs as an internal free private service (no external account needed).
+# Postgres is external: paste a connection string (Supabase or Neon via VPN) into DATABASE_URL.
+# Backend runs API + workers + bot in one process (dist/all.js).
 services:
+  # Internal Redis (free private service, accessible only inside this workspace)
+  - type: pserv
+    name: sintex-redis
+    runtime: image
+    image:
+      url: redis:7-alpine
+    plan: free
+    envVars:
+      - key: REDIS_ARGS
+        value: "--maxmemory-policy noeviction"
+
   - type: web
     name: sintex-backend
     runtime: docker
@@ -11,9 +23,17 @@ services:
     dockerCommand: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/all.js"
     envVars:
       - key: DATABASE_URL
-        sync: false   # paste Neon connection string here
-      - key: REDIS_URL
-        sync: false   # paste Upstash Redis connection string here
+        sync: false   # paste external Postgres connection string here
+      - key: REDIS_HOST
+        fromService:
+          type: pserv
+          name: sintex-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: pserv
+          name: sintex-redis
+          property: port
       - key: NODE_ENV
         value: production
       - key: SESSION_TTL_HOURS
