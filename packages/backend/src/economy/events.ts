@@ -72,7 +72,7 @@ export async function spawnRandomEvent(
 
   const kind = pickRandom(EVENT_KINDS, rng);
   const def = EVENT_DEFS[kind];
-  const payload: Record<string, unknown> = {};
+  const payload: Record<string, string | number> = {};
   if (kind === 'PRICE_SPIKE') {
     const resource = pickRandom(RESOURCE_KINDS, rng);
     payload.resource = resource;

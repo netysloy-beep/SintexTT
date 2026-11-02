@@ -1,7 +1,7 @@
 import { Prisma, type GameEvent, type PlayerBooster, type PlayerTech } from '@prisma/client';
 import { BASE_PRICES, RESOURCE_KINDS, type ResourceKind } from './catalog.js';
 import { addSpread, subSpread } from '../lib/money.js';
-import { getResource, type ResourceMap } from './engine.js';
+import { getResource, addResource, type ResourceMap } from './engine.js';
 
 export const LIQUIDITY = 500n; // units: how much volume moves the price by 100%
 const PRICE_MIN_BPS = 2500n; // price floor: 25% of base

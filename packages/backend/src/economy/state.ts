@@ -48,6 +48,9 @@ export async function accrueForPlayer(
     tx.gameEvent.findMany({ where: { playerId, resolved: false } }),
   ]);
 
+  const resources: ResourceMap = new Map(resourceRows.map((r) => [r.kind, r.qty]));
+  const mods = collectModifiers(events, techs, boosters, now);
+
   const producedIds: string[] = [];
   for (const b of buildings) {
     const report = applyCycles(b, resources, mods, now);

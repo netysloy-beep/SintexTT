@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { AppError } from './lib/errors.js';
@@ -8,13 +9,13 @@ import { errorCodeToStatus } from './api/types.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    loggerInstance: logger as never,
+    logger: logger as never,
     bodyLimit: 1 * 1024 * 1024,
     trustProxy: true,
   });
 
   // CORS: allow configured origins (Telegram WebApp + local dev).
-  await app.register(import('@fastify/cors'), {
+  await app.register(cors, {
     origin: env.corsOrigins.length > 0 ? env.corsOrigins : true,
     methods: ['GET', 'POST'],
   });
