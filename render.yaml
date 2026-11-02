@@ -9,7 +9,7 @@ services:
     dockerfilePath: packages/backend/Dockerfile
     plan: free
     healthCheckPath: /health
-    dockerCommand: sh -c "redis-server --daemonize yes --maxmemory-policy noeviction && npx prisma migrate deploy && npx prisma db seed && node dist/all.js"
+    dockerCommand: ./scripts/render-start.sh
     envVars:
       - key: DATABASE_URL
         sync: false   # paste Supabase Session pooler URI here (aws-...pooler.supabase.com)
