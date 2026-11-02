@@ -1,5 +1,6 @@
 FROM node:22-alpine AS base
-RUN corepack enable
+# Prisma engine detection needs the openssl binary present (musl target).
+RUN apk add --no-cache openssl && corepack enable
 WORKDIR /app
 
 FROM base AS deps
