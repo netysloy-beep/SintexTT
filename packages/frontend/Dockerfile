@@ -12,6 +12,6 @@ FROM nginx:1.27-alpine
 RUN apk add --no-cache gettext
 COPY packages/frontend/nginx.conf /etc/nginx/conf.d/default.conf.template
 COPY --from=build /app/packages/frontend/dist /usr/share/nginx/html
-ENV BACKEND_HOST=backend BACKEND_PORT=3000
+ENV BACKEND_ORIGIN=https://sintex-backend-rl3r.onrender.com
 EXPOSE 80
-CMD ["sh", "-c", "envsubst '$BACKEND_HOST $BACKEND_PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "envsubst '$BACKEND_ORIGIN' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
