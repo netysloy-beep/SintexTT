@@ -1,36 +1,19 @@
-# Render Blueprint — https://render.com/docs/blueprint-spec
-# One Starter web service runs API + workers + bot (dist/all.js), keeping cost at ~$7/mo total.
+# Render Blueprint — fully free-tier setup (no payment info required).
+# Postgres -> Neon (neon.tech), Redis -> Upstash (upstash.com): paste connection strings.
+# Backend runs API + workers + bot in one process (dist/all.js) on the free plan.
 services:
-  # Redis-compatible Key Value instance (BullMQ, rate limits, idempotency).
-  # Empty ipAllowList = internal access only (other services in this workspace).
-  - type: keyvalue
-    name: sintex-redis
-    plan: free
-    maxmemoryPolicy: noeviction
-    ipAllowList: []
-
   - type: web
     name: sintex-backend
     runtime: docker
     dockerfilePath: packages/backend/Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /health
     dockerCommand: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/all.js"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: sintex-pg
-          property: connectionString
-      - key: REDIS_HOST
-        fromService:
-          type: keyvalue
-          name: sintex-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: keyvalue
-          name: sintex-redis
-          property: port
+        sync: false   # paste Neon connection string here
+      - key: REDIS_URL
+        sync: false   # paste Upstash Redis connection string here
       - key: NODE_ENV
         value: production
       - key: SESSION_TTL_HOURS
@@ -58,9 +41,3 @@ services:
           name: sintex-backend
           type: web
           property: port
-
-databases:
-  - name: sintex-pg
-    plan: free
-    databaseName: econ
-    user: econ
