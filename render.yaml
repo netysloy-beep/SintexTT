@@ -1,14 +1,17 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 # One Starter web service runs API + workers + bot (dist/all.js), keeping cost at ~$7/mo total.
 services:
-  # Redis-compatible Key Value instance (BullMQ, rate limits, idempotency)
+  # Redis-compatible Key Value instance (BullMQ, rate limits, idempotency).
+  # Empty ipAllowList = internal access only (other services in this workspace).
   - type: keyvalue
     name: sintex-redis
     plan: free
     maxmemoryPolicy: noeviction
+    ipAllowList: []
 
   - type: web
     name: sintex-backend
+    runtime: docker
     dockerfilePath: packages/backend/Dockerfile
     plan: starter
     healthCheckPath: /health
@@ -41,6 +44,7 @@ services:
 
   - type: web
     name: sintex-frontend
+    runtime: docker
     dockerfilePath: packages/frontend/Dockerfile
     plan: free
     envVars:
