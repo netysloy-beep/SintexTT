@@ -1,6 +1,12 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 # One Starter web service runs API + workers + bot (dist/all.js), keeping cost at ~$7/mo total.
 services:
+  # Redis-compatible Key Value instance (BullMQ, rate limits, idempotency)
+  - type: keyvalue
+    name: sintex-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+
   - type: web
     name: sintex-backend
     dockerfilePath: packages/backend/Dockerfile
@@ -12,10 +18,16 @@ services:
         fromDatabase:
           name: sintex-pg
           property: connectionString
-      - key: REDIS_URL
-        fromDatabase:
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
           name: sintex-redis
-          property: connectionString
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: sintex-redis
+          property: port
       - key: NODE_ENV
         value: production
       - key: SESSION_TTL_HOURS
@@ -48,9 +60,3 @@ databases:
     plan: free
     databaseName: econ
     user: econ
-    ipAllowList: []
-  - name: sintex-redis
-    type: keyvalue
-    plan: free
-    maxmemoryPolicy: noeviction
-    ipAllowList: []

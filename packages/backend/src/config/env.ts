@@ -20,11 +20,23 @@ function intEnv(name: string, fallback: number): number {
   return parsed;
 }
 
+/** REDIS_URL wins; Render Key Value exposes REDIS_HOST / REDIS_PORT instead. */
+function redisUrlEnv(): string {
+  const direct = process.env.REDIS_URL?.trim();
+  if (direct) return direct;
+  const host = process.env.REDIS_HOST?.trim();
+  if (host) {
+    const port = (process.env.REDIS_PORT ?? '6379').trim();
+    return `redis://${host}:${port}`;
+  }
+  throw new Error('Missing required environment variable: REDIS_URL (or REDIS_HOST/REDIS_PORT)');
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: intEnv('PORT', 3000),
   databaseUrl: requireEnv('DATABASE_URL'),
-  redisUrl: requireEnv('REDIS_URL'),
+  redisUrl: redisUrlEnv(),
   botToken: process.env.BOT_TOKEN && process.env.BOT_TOKEN.length > 10 ? process.env.BOT_TOKEN.trim() : undefined,
   botWebappUrl: process.env.BOT_WEBAPP_URL?.trim() || undefined,
   sessionTtlHours: intEnv('SESSION_TTL_HOURS', 168),
