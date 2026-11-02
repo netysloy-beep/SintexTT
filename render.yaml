@@ -1,39 +1,20 @@
 # Render Blueprint — fully free-tier setup (no payment info required).
-# Redis runs as an internal free private service (no external account needed).
-# Postgres is external: paste a connection string (Supabase or Neon via VPN) into DATABASE_URL.
+# Redis runs inside the backend container (free plan has a single instance, no extra resources).
+# Postgres is external: paste a Supabase Session pooler URI into DATABASE_URL.
 # Backend runs API + workers + bot in one process (dist/all.js).
 services:
-  # Internal Redis (free private service, accessible only inside this workspace)
-  - type: pserv
-    name: sintex-redis
-    runtime: image
-    image:
-      url: redis:7-alpine
-    plan: free
-    envVars:
-      - key: REDIS_ARGS
-        value: "--maxmemory-policy noeviction"
-
   - type: web
     name: sintex-backend
     runtime: docker
     dockerfilePath: packages/backend/Dockerfile
     plan: free
     healthCheckPath: /health
-    dockerCommand: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/all.js"
+    dockerCommand: sh -c "redis-server --daemonize yes --maxmemory-policy noeviction && npx prisma migrate deploy && npx prisma db seed && node dist/all.js"
     envVars:
       - key: DATABASE_URL
-        sync: false   # paste external Postgres connection string here
-      - key: REDIS_HOST
-        fromService:
-          type: pserv
-          name: sintex-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: pserv
-          name: sintex-redis
-          property: port
+        sync: false   # paste Supabase Session pooler URI here (aws-...pooler.supabase.com)
+      - key: REDIS_URL
+        value: redis://127.0.0.1:6379
       - key: NODE_ENV
         value: production
       - key: SESSION_TTL_HOURS

@@ -14,6 +14,8 @@ RUN cd packages/backend && pnpm prisma generate && pnpm build
 
 FROM base AS runner
 ENV NODE_ENV=production
+# redis-server runs in-container on free single-instance hosts (e.g. Render free plan)
+RUN apk add --no-cache redis
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages/backend/node_modules ./packages/backend/node_modules
 COPY --from=build /app/packages/backend/dist ./packages/backend/dist
