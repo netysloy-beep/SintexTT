@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
@@ -9,7 +9,7 @@ import { errorCodeToStatus } from './api/types.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: logger as never,
+    logger: logger as unknown as FastifyBaseLogger,
     bodyLimit: 1 * 1024 * 1024,
     trustProxy: true,
   });

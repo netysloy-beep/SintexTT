@@ -4,14 +4,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@telegram-apps/sdk-react": "^2.0.0",
+    "@telegram-apps/sdk": "^2.0.0",
     "framer-motion": "^11.11.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
