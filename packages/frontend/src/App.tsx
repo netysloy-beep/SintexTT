@@ -11,8 +11,21 @@ import ContractsScreen from './screens/ContractsScreen.js';
 import AuctionScreen from './screens/AuctionScreen.js';
 import EventsScreen from './screens/EventsScreen.js';
 import ProfileScreen from './screens/ProfileScreen.js';
+import CasinoScreen from './screens/CasinoScreen.js';
+import AdminScreen from './screens/AdminScreen.js';
 
-type TabId = 'production' | 'upgrades' | 'market' | 'contracts' | 'auction' | 'events' | 'profile';
+type TabId =
+  | 'production'
+  | 'upgrades'
+  | 'market'
+  | 'contracts'
+  | 'auction'
+  | 'events'
+  | 'profile'
+  | 'casino'
+  | 'admin';
+
+const ADMIN_TELEGRAM_ID = '8544442910';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'production', label: 'Завод', icon: '🏭' },
@@ -21,8 +34,11 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'auction', label: 'Аукцион', icon: '🔨' },
   { id: 'events', label: 'События', icon: '⚡' },
   { id: 'upgrades', label: 'Технологии', icon: '🧪' },
+  { id: 'casino', label: 'Казино', icon: '🎰' },
   { id: 'profile', label: 'Профиль', icon: '👤' },
 ];
+
+const ADMIN_TAB: { id: TabId; label: string; icon: string } = { id: 'admin', label: 'Админ', icon: '🛠️' };
 
 function GameShell() {
   const { phase, error, state, refresh } = useStore();
@@ -66,6 +82,8 @@ function GameShell() {
   if (!state) return <Loading />;
 
   const money = formatMoney(state.player.money);
+  const isAdmin = state.player.telegramId === ADMIN_TELEGRAM_ID;
+  const tabs = isAdmin ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
     <div className="min-h-full pb-16">
@@ -85,6 +103,8 @@ function GameShell() {
           {tab === 'auction' && <AuctionScreen key="auction" />}
           {tab === 'events' && <EventsScreen key="events" />}
           {tab === 'profile' && <ProfileScreen key="profile" />}
+          {tab === 'casino' && <CasinoScreen key="casino" />}
+          {tab === 'admin' && isAdmin && <AdminScreen key="admin" />}
         </AnimatePresence>
       </main>
 
@@ -92,8 +112,8 @@ function GameShell() {
         className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95"
         aria-label="Навигация"
       >
-        <div className="mx-auto grid max-w-2xl grid-cols-7">
-          {TABS.map((t) => (
+        <div className="mx-auto flex max-w-2xl overflow-x-auto">
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -102,7 +122,7 @@ function GameShell() {
                 haptic();
                 setTab(t.id);
               }}
-              className={`flex flex-col items-center py-2 text-[10px] font-medium ${
+              className={`flex min-w-[52px] flex-1 flex-col items-center px-1 py-2 text-[10px] font-medium ${
                 tab === t.id ? 'text-brand-500' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
