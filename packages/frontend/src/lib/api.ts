@@ -36,7 +36,10 @@ async function request<T>(
   body?: unknown,
   extraHeaders?: Record<string, string>,
 ): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...extraHeaders };
+  const headers: Record<string, string> = { ...extraHeaders };
+  // Only advertise JSON when we actually send a JSON body; an empty body
+  // with Content-Type: application/json makes Fastify reject the request.
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (method === 'POST') headers['Idempotency-Key'] = idempotencyKey();

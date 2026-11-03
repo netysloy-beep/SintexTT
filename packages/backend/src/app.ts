@@ -20,6 +20,19 @@ export async function buildApp(): Promise<FastifyInstance> {
     methods: ['GET', 'POST'],
   });
 
+  // Tolerate POSTs that carry Content-Type: application/json but an empty body
+  // (e.g. older clients). Fastify would otherwise reject with FST_ERR_CTP_EMPTY_JSON_BODY.
+  app.addHook('onRequest', async (req, _reply) => {
+    const ct = req.headers['content-type'];
+    if (ct !== undefined && ct.includes('application/json')) {
+      const len = Number(req.headers['content-length'] ?? '0');
+      if (!Number.isFinite(len) || len === 0) {
+        req.headers['content-type'] = undefined;
+        delete req.headers['content-type'];
+      }
+    }
+  });
+
   await registerAuthPlugin(app);
   await registerRoutes(app);
 
