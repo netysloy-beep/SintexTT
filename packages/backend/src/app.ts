@@ -35,7 +35,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     const status = errorCodeToStatus(code);
     if (status >= 500) {
       req.log.error({ err }, 'unhandled error');
-      return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
+      // Surface the real reason to the client so issues are debuggable in the UI.
+      const detail = err instanceof Error && err.message ? `${err.name}: ${err.message}` : 'Internal server error';
+      return reply.status(500).send({ error: 'INTERNAL_ERROR', message: detail });
     }
     req.log.warn({ code }, 'economy error');
     return reply.status(status).send({ error: code, message: err.message });

@@ -21,6 +21,7 @@ export function sendJSON(reply: FastifyReply, statusCode: number, payload: unkno
 
 /** Map thrown Error messages from the economy layer to HTTP status codes. */
 export function errorCodeToStatus(code: string): number {
+  if (code.startsWith('NEGATIVE_RESOURCE')) return 400;
   switch (code) {
     case 'INVALID_QTY':
     case 'QTY_TOO_LARGE':
