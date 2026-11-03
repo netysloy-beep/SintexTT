@@ -37,14 +37,14 @@ export function validateInitData(
     throw new Error('INVALID_HASH');
   }
 
-  // data_check_string: all fields except hash, sorted by key, joined by \n.
-  const pairs: string[] = [];
-  for (const [key, value] of params.entries()) {
-    if (key === 'hash' || key === 'signature') continue;
-    if (pairs.some((p) => p.startsWith(`${key}=`))) continue; // URLSearchParams already collapses dupes; keep first
-    pairs.push(`${key}=${value}`);
-  }
-  const dataCheckString = pairs.sort().join('\n');
+  // data_check_string: ALL fields except hash (including signature), sorted, joined by \n.
+  // Per the official Telegram spec example: delete only 'hash' from the params.
+  const params2 = new URLSearchParams(initData);
+  params2.delete('hash');
+  const dataCheckString = [...params2.entries()]
+    .map(([key, value]) => `${key}=${value}`)
+    .sort()
+    .join('\n');
 
   const secretKey = createHmac('sha256', 'WebAppData').update(botToken).digest();
   const expected = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
