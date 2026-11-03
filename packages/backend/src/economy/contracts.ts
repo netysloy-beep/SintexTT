@@ -1,5 +1,5 @@
 import { Prisma, type Contract, type Player } from '@prisma/client';
-import { BUILDING_MAP, RESOURCE_KINDS, type ResourceKind } from './catalog.js';
+import { BUILDING_MAP, type ResourceKind } from './catalog.js';
 import { addSpread } from '../lib/money.js';
 
 export const OFFER_TTL_MINUTES = 90; // unaccepted offers expire
