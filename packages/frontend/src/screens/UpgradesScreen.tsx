@@ -9,7 +9,7 @@ interface ProfileResponse {
 }
 
 export default function UpgradesScreen() {
-  const { state } = useStore();
+  const { state, refresh } = useStore();
   const [owned, setOwned] = useState<string[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +37,8 @@ export default function UpgradesScreen() {
       await api.post(`/techs/${techId}/unlock`);
       const res = await api.get<ProfileResponse>('/profile');
       setOwned(res.techs.owned);
+      // Refresh global state so the header balance updates immediately.
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка запроса');
     } finally {

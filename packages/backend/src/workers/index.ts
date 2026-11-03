@@ -9,8 +9,6 @@ import { generateOffers, resolveContracts } from '../economy/contracts.js';
 import { openDailyAuction, closeAuctions } from '../economy/auction.js';
 import { pruneIdempotency } from '../lib/idempotency.js';
 
-
-
 function repeatable(name: string, cron: string, handler: (jobId: string) => Promise<void>): void {
   const queue = new Queue(name, { connection: redis, prefix: 'econ' });
   void queue.add(
@@ -37,6 +35,30 @@ async function withLock(lockId: string, owner: string, ttlMs: number, fn: () => 
     update: { ownerId: owner, expiresAt: new Date(now + ttlMs) },
   });
   await fn();
+}
+
+/**
+ * Generate starting content right at boot so new players see contracts,
+ * an event and auction lots immediately instead of waiting hours for crons.
+ * All generators are idempotent (offers capped, one unresolved event, one lot set per day).
+ */
+async function bootstrapContent(): Promise<void> {
+  try {
+    const now = new Date();
+    const players = await prisma.player.findMany({ select: { id: true } });
+    for (const p of players) {
+      await prisma.$transaction(async (tx) => {
+        const fresh = await tx.player.findUniqueOrThrow({ where: { id: p.id } });
+        await generateOffers(tx, fresh, now);
+        await spawnRandomEvent(tx, fresh, now);
+      });
+    }
+    const lots = await prisma.$transaction((tx) => openDailyAuction(tx, now));
+    await prisma.$transaction((tx) => resolveExpiredEvents(tx, now));
+    logger.info({ players: players.length, lots }, 'bootstrap content ready');
+  } catch (err) {
+    logger.error({ err }, 'bootstrap content failed');
+  }
 }
 
 async function main(): Promise<void> {
@@ -106,6 +128,9 @@ async function main(): Promise<void> {
       logger.info({ removed }, 'idempotency records pruned');
     });
   });
+
+  // Fill the world with content immediately on boot.
+  void bootstrapContent();
 
   logger.info('workers started');
 }
