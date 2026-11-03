@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+successfully downloaded text file (SHA: d8b8f2d7904862bbd78cca7266045483c0d83f90)import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
 import { useStore } from '../store.js';
 import { Badge, Button, Card, ErrorState, Loading, Screen } from '../components/ui.js';
@@ -47,7 +47,7 @@ export default function AdminScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [moneyInput, setMoneyInput] = useState('');
-  const [setMoneyInput, setSetMoneyInput] = useState('');
+  const [setMoneyValue, setSetMoneyValue] = useState('');
   const [workersInput, setWorkersInput] = useState('');
   const [trucksInput, setTrucksInput] = useState('');
   const [resKind, setResKind] = useState('WHEAT');
@@ -129,11 +129,11 @@ export default function AdminScreen() {
   };
 
   const setMoney = () => {
-    const cents = dollarsToCents(setMoneyInput);
+    const cents = dollarsToCents(setMoneyValue);
     if (!cents || !selected) return;
     void act(async () => {
       await api.post('/admin/set', { playerId: selected.player.id, money: cents });
-      setSetMoneyInput('');
+      setSetMoneyValue('');
     }, 'Баланс установлен');
   };
 
@@ -277,7 +277,7 @@ export default function AdminScreen() {
             <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Установить баланс (точно)</p>
             <div className="flex gap-2">
               <input
-                value={setMoneyInput}
+                value={setMoneyValue}
                 onChange={(e) => setSetMoneyInput(e.target.value)}
                 placeholder="Новый баланс, $"
                 inputMode="decimal"
