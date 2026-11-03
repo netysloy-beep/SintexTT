@@ -57,8 +57,8 @@ export function driftTick(prices: { kind: string; price: bigint }[], tickIndex: 
     const base = BASE_PRICES[kind as ResourceKind];
     if (!base) continue;
     // wiggle: deterministic pseudo-noise in [-1%, +1%] based on tickIndex
-    const w = ((tickIndex * 2654435761) % 2001) - 1000; // -1000..1000 bps of 1% scale
-    const wiggleBps = w / 10; // -100..100 bps
+    const w = ((tickIndex * 2654435761) % 2001) - 1000; // -1000..1000
+    const wiggleBps = Math.trunc(w / 10); // -100..100 bps, always an integer
     const towardBase = price + (base - price) / 100n;
     const moved = towardBase + (towardBase * BigInt(wiggleBps)) / 10000n;
     out.set(kind, clampPrice(kind, moved < 1n ? 1n : moved));
