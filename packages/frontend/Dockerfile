@@ -6,6 +6,8 @@ COPY packages/frontend/package.json packages/frontend/
 RUN pnpm install --filter @econ/frontend --ignore-scripts
 COPY tsconfig.base.json ./
 COPY packages/frontend packages/frontend
+# Talk to the backend directly (CORS is enabled on the backend for this origin).
+ENV VITE_API_BASE=https://sintex-backend-rl3r.onrender.com
 RUN cd packages/frontend && pnpm build
 
 FROM nginx:1.27-alpine
