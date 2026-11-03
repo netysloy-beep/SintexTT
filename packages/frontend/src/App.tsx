@@ -14,6 +14,8 @@ import ProfileScreen from './screens/ProfileScreen.js';
 import CasinoScreen from './screens/CasinoScreen.js';
 import AdminScreen from './screens/AdminScreen.js';
 
+export const APP_VERSION = 'v1.3';
+
 type TabId =
   | 'production'
   | 'upgrades'
@@ -55,6 +57,7 @@ function GameShell() {
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Mini App работает внутри Telegram. Запустите бота и нажмите «Играть».
           </p>
+          <p className="mt-3 text-xs text-slate-400">{APP_VERSION}</p>
         </Card>
       </div>
     );
@@ -89,7 +92,9 @@ function GameShell() {
     <div className="min-h-full pb-16">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-700 dark:bg-slate-800/90">
         <div className="mx-auto flex max-w-md items-center justify-between">
-          <span className="font-bold text-slate-900 dark:text-slate-100">Sintex Tycoon</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100">
+            Sintex Tycoon <span className="text-[10px] font-normal text-slate-400">{APP_VERSION}</span>
+          </span>
           <span className="font-semibold text-emerald-600">💰 {money}</span>
         </div>
       </header>
