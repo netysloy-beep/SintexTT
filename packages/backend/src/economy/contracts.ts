@@ -1,5 +1,5 @@
 import { Prisma, type Contract, type Player } from '@prisma/client';
-import { RESOURCE_KINDS, type ResourceKind } from './catalog.js';
+import { BUILDING_MAP, RESOURCE_KINDS, type ResourceKind } from './catalog.js';
 import { addSpread } from '../lib/money.js';
 
 export const OFFER_TTL_MINUTES = 90; // unaccepted offers expire
@@ -9,6 +9,19 @@ function pickRandom<T>(arr: readonly T[], rng: () => number): T {
   return arr[Math.floor(rng() * arr.length)] as T;
 }
 
+/** Resources the player can actually produce with their buildings (raw fallback). */
+async function producibleKinds(tx: Prisma.TransactionClient, playerId: string): Promise<ResourceKind[]> {
+  const buildings = await tx.building.findMany({ where: { playerId } });
+  const set = new Set<ResourceKind>();
+  for (const b of buildings) {
+    const def = BUILDING_MAP.get(b.kind);
+    if (def) set.add(def.output.kind);
+  }
+  const pool = [...set].filter((k) => k !== 'ENERGY');
+  if (pool.length === 0) return ['WHEAT', 'WOOD'];
+  return pool;
+}
+
 /** Generate up to 2 fresh contract offers for a player inside a tx. */
 export async function generateOffers(
   tx: Prisma.TransactionClient,
@@ -16,6 +29,12 @@ export async function generateOffers(
   now: Date,
   rng: () => number = Math.random,
 ): Promise<Contract[]> {
+  // Drop offers the player cannot possibly fulfil (e.g. after losing buildings).
+  const pool = await producibleKinds(tx, player.id);
+  await tx.contract.deleteMany({
+    where: { playerId: player.id, status: 'OFFERED', resource: { notIn: pool } },
+  });
+
   const openCount = await tx.contract.count({
     where: { playerId: player.id, status: 'OFFERED' },
   });
@@ -23,7 +42,7 @@ export async function generateOffers(
 
   const created: Contract[] = [];
   for (let i = openCount; i < 2; i += 1) {
-    const resource = pickRandom(RESOURCE_KINDS.filter((k) => k !== 'ENERGY'), rng);
+    const resource = pickRandom(pool, rng);
     const qty = 20n + BigInt(Math.floor(rng() * 60)); // 20..80 units
     // Reward: slightly above the sell price of the resource (~15% premium).
     const priceRow = await tx.marketPrice.findUnique({ where: { kind: resource } });
